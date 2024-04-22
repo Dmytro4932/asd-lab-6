@@ -1,0 +1,75 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <Windows.h>
+
+using namespace std;
+
+struct Point {
+    double x, y;
+};
+
+// Визначення векторного добутку двох векторів (з точками як векторами)
+double crossProduct(const Point& O, const Point& A, const Point& B) {
+    return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+}
+
+// Порівняння для сортування точок за кутом їх відносно початкової точки
+bool angleCmp(const Point& O, const Point& A, const Point& B) {
+    double cross = crossProduct(O, A, B);
+    if (cross == 0)
+        return (O.x - A.x) * (O.x - A.x) + (O.y - A.y) * (O.y - A.y) < (O.x - B.x) * (O.x - B.x) + (O.y - B.y) * (O.y - B.y);
+    return cross > 0;
+}
+
+// Алгоритм Грехема для знаходження опуклої оболонки
+vector<Point> convexHull(vector<Point> points) {
+    int n = points.size();
+    if (n <= 3) return points;
+
+    int startPos = 0;
+    for (int i = 1; i < n; ++i) {
+        if (points[i].y < points[startPos].y || (points[i].y == points[startPos].y && points[i].x < points[startPos].x))
+            startPos = i;
+    }
+
+    swap(points[0], points[startPos]);
+    sort(points.begin() + 1, points.end(), [&](const Point& A, const Point& B) {
+        return angleCmp(points[0], A, B);
+        });
+
+    vector<Point> hull;
+    hull.push_back(points[0]);
+    hull.push_back(points[1]);
+
+    for (int i = 2; i < n; ++i) {
+        while (hull.size() > 1 && crossProduct(hull[hull.size() - 2], hull[hull.size() - 1], points[i]) <= 0)
+            hull.pop_back();
+        hull.push_back(points[i]);
+    }
+
+    return hull;
+}
+
+int main() {
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    int n;
+    cout << "Введіть кількість точок: ";
+    cin >> n;
+
+    vector<Point> points(n);
+    cout << "Введіть координати кожної точки (x, y):" << endl;
+    for (int i = 0; i < n; ++i) {
+        cin >> points[i].x >> points[i].y;
+    }
+
+    vector<Point> convexHullPoints = convexHull(points);
+
+    cout << "Точки опуклої оболонки:" << endl;
+    for (const auto& point : convexHullPoints) {
+        cout << "(" << point.x << ", " << point.y << ")" << endl;
+    }
+
+    return 0;
+}
